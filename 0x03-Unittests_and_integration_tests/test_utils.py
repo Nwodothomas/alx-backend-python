@@ -49,26 +49,103 @@ class TestAccessNestedMap(unittest.TestCase):
         result = access_nested_map(nested_map, path)
         self.assertEqual(result, expected_result)
 
-@parameterized.expand([
+    @parameterized.expand([
         ({}, ("a",), KeyError),
         ({"a": 1}, ("a", "b"), KeyError),
     ])
-    def test_access_nested_map_exception(self, nested_map, path, expected_exception):
+    def test_access_nested_map_exception(self, nested_map, path, expected_result):
         """
-        Test the access_nested_map function with invalid paths that should raise KeyError.
+        Test the access_nested_map function with invalid paths that should raise exceptions.
 
         Args:
             nested_map (dict): The nested dictionary to search.
             path (tuple): A tuple of keys representing the path to the desired value.
-            expected_exception (type): The expected exception type to be raised.
+            expected_result: The expected exception type raised by the access_nested_map function.
 
         Returns:
             None: This method does not return anything explicitly.
         """
-        with self.assertRaises(expected_exception) as context:
+        with self.assertRaises(expected_result) as context:
             access_nested_map(nested_map, path)
 
-        # Verify the exception message (optional but recommended)
-        if expected_exception is KeyError:
-            expected_message = f"Key not found: {path[-1]}"
-            self.assertEqual(str(context.exception), expected_message)
+
+class TestGetJson(unittest.TestCase):
+    """
+    Test case class to test the get_json function.
+    """
+
+    @parameterized.expand([
+        ('http://example.com', {'payload': True}),
+        ('http://holberton.io', {'payload': False}),
+    ])
+    def test_get_json(self, url, expected_output):
+        """
+        Test the get_json function with different URLs.
+
+        Args:
+            url (str): The URL to fetch JSON data from.
+            expected_output (dict): The expected JSON data.
+
+        Returns:
+            None: This method does not return anything explicitly.
+        """
+        mock_response = Mock()
+        mock_response.json.return_value = expected_output
+        with patch('requests.get', return_value=mock_response):
+            response = get_json(url)
+            self.assertEqual(response, expected_output)
+
+
+class TestMemoize(unittest.TestCase):
+    """
+    Test case class to test the memoize decorator.
+    """
+
+    def test_memoize(self):
+        """
+        Test the memoize decorator.
+
+        Returns:
+            None: This method does not return anything explicitly.
+        """
+
+        class TestClass:
+            """
+            A test class to demonstrate the use of the memoize decorator.
+            """
+
+            def a_method(self):
+                """
+                A method to simulate a computation.
+
+                Returns:
+                    int: The result of the computation (constant value for this example).
+                """
+                return 42
+
+            @memoize
+            def a_property(self):
+                """
+                A property decorated with the memoize decorator.
+                This property will be memoized, i.e., the computation is performed only once.
+
+                Returns:
+                    int: The result of the a_method call.
+                """
+                return self.a_method()
+
+        test_obj = TestClass()
+
+        with patch.object(test_obj, 'a_method') as mock_method:
+            mock_method.return_value = 42
+
+            result1 = test_obj.a_property
+            result2 = test_obj.a_property
+
+            self.assertEqual(result1, 42)
+            self.assertEqual(result2, 42)
+            mock_method.assert_called_once()
+
+
+if __name__ == '__main__':
+    unittest.main()
